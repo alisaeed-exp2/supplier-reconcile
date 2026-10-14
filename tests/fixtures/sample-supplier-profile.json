@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "supplierName": "Almarai Company",
+  "headerRow": 13,
+  "firstDataRow": 14,
+  "lastDataRow": null,
+  "columns": { "date": "E", "reference": "D", "description": "C", "type": "F", "debit": "G", "credit": "H", "balance": "I" },
+  "reference": { "column": "D", "regex": null, "group": null },
+  "owedIncreasesOn": "debit",
+  "dateFormat": "DMY",
+  "kindRules": [
+    { "column": "F", "pattern": "^invoice", "kind": "invoice" },
+    { "column": "F", "pattern": "receipt|payment", "kind": "payment" },
+    { "column": "F", "pattern": "round", "kind": "adjustment" },
+    { "column": "F", "pattern": "credit", "kind": "credit_note" }
+  ],
+  "skipRules": [],
+  "stopRules": [{ "column": "E", "pattern": "^\\s*[A-Za-z]+ \\d{4}\\s*$" }],
+  "openingBalanceMatch": { "matchColumn": "C", "pattern": "^Opening Balance", "valueColumn": "I" },
+  "notes": "TEST FIXTURE ONLY - mimics what the AI mapping returns for one sample supplier."
+}

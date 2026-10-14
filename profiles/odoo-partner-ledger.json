@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "supplierName": null,
+  "supplierNameRule": {
+    "row": 1,
+    "column": "A",
+    "relativeToHeader": true
+  },
+  "headerRow": 3,
+  "firstDataRow": 4,
+  "lastDataRow": null,
+  "columns": {
+    "date": "D",
+    "dueDate": "E",
+    "reference": "A",
+    "description": "A",
+    "type": "B",
+    "debit": "G",
+    "credit": "H",
+    "amount": null,
+    "balance": "J"
+  },
+  "reference": {
+    "column": "A",
+    "regex": "(?:INV(?:OICE)?\\s*(?:NO\\.?|NUMBER|#)\\s*[:#]?\\s*)+([A-Za-z0-9\\-/]*\\d[A-Za-z0-9\\-/]*)",
+    "group": 1
+  },
+  "owedIncreasesOn": "credit",
+  "dateFormat": "DMY",
+  "kindRules": [
+    {
+      "column": "A",
+      "pattern": "payment|PSN|BNK|receipt",
+      "kind": "payment"
+    }
+  ],
+  "skipRules": [
+    {
+      "column": "B",
+      "pattern": "^$"
+    }
+  ],
+  "stopRules": [],
+  "openingBalanceMatch": {
+    "matchColumn": "A",
+    "pattern": "^Initial Balance",
+    "valueColumn": "J"
+  },
+  "closingBalanceMatch": {
+    "matchColumn": "A",
+    "pattern": "^Total$",
+    "valueColumn": "J"
+  },
+  "notes": "Preset for the Odoo 18 Enterprise Partner Ledger export (Accounting > Reporting > Partner Ledger). Header block rows are skipped via the empty Journal column."
+}
