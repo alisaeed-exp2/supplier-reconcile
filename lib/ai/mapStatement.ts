@@ -108,15 +108,21 @@ export async function mapStatementWithClaude(req: MapRequest): Promise<unknown> 
     text += `\n\nA previous profile was tried and had problems:\n${req.feedback.problems.map((p) => `- ${p}`).join("\n")}\nPrevious profile: ${JSON.stringify(req.feedback.previous)}\nReturn a corrected profile.`;
   }
 
-  const res = await client.messages.create({
-    model: MODEL(),
-    max_tokens: 4000,
-    system: SYSTEM,
-    tools: [TOOL],
-    tool_choice: { type: "tool", name: TOOL.name },
-    messages: [{ role: "user", content: text }],
-  });
-  const block = res.content.find((b) => b.type === "tool_use");
-  if (!block || block.type !== "tool_use") throw new Error("The AI did not return a mapping.");
-  return block.input;
+  // Some models reject a forced tool_choice, so let the model choose and nudge once if it replies in prose.
+  const messages: Anthropic.MessageParam[] = [{ role: "user", content: text }];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await client.messages.create({
+      model: MODEL(),
+      max_tokens: 4000,
+      system: SYSTEM,
+      tools: [TOOL],
+      tool_choice: { type: "auto" },
+      messages,
+    });
+    const block = res.content.find((b) => b.type === "tool_use");
+    if (block && block.type === "tool_use") return block.input;
+    messages.push({ role: "assistant", content: res.content });
+    messages.push({ role: "user", content: `Call the ${TOOL.name} tool now with the parsing profile. Do not reply with text.` });
+  }
+  throw new Error("The AI did not return a mapping.");
 }
