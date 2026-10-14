@@ -40,7 +40,7 @@ export default function Page() {
     if (suggested) setSupplierName(suggested);
   }, [akcc.analysis, sup.analysis]);
 
-  async function analyze(role: Role, file: File, profile?: StatementProfile, save = false) {
+  async function analyze(role: Role, file: File, profile?: StatementProfile, save = false, grid?: unknown) {
     setSlot(role, { file, loading: true, error: null });
     setResult(null);
     try {
@@ -50,6 +50,7 @@ export default function Page() {
       if (profile) {
         fd.append("profile", JSON.stringify(profile));
         fd.append("save", String(save));
+        if (grid) fd.append("grid", JSON.stringify(grid));
       }
       const res = await fetch("/api/analyze", { method: "POST", body: fd });
       const data = await res.json();
@@ -128,18 +129,18 @@ export default function Page() {
         <StatementCard
           role="akcc"
           title="1. AKCC statement"
-          description="Partner ledger exported from Odoo 18 Enterprise."
+          description="Partner ledger exported from Odoo 18 Enterprise (Excel or PDF)."
           {...akcc}
           onFile={(f) => analyze("akcc", f)}
-          onRemap={(p, save) => akcc.file && analyze("akcc", akcc.file, p, save)}
+          onRemap={(p, save) => akcc.file && analyze("akcc", akcc.file, p, save, akcc.analysis?.sourceGrid)}
         />
         <StatementCard
           role="supplier"
           title="2. Supplier statement"
-          description="The supplier's statement of account, in whatever Excel layout they use."
+          description="The supplier's statement of account: Excel in any layout, or a PDF."
           {...sup}
           onFile={(f) => analyze("supplier", f)}
-          onRemap={(p, save) => sup.file && analyze("supplier", sup.file, p, save)}
+          onRemap={(p, save) => sup.file && analyze("supplier", sup.file, p, save, sup.analysis?.sourceGrid)}
         />
       </div>
 

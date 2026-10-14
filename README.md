@@ -1,6 +1,6 @@
 # AKCC Supplier Reconciliation
 
-Reconciles AKCC's Odoo 18 Enterprise **Partner Ledger** against **any supplier's Statement of Account** (SOA), whatever the supplier's Excel layout.
+Reconciles AKCC's Odoo 18 Enterprise **Partner Ledger** against **any supplier's Statement of Account** (SOA), whatever the supplier's layout. Inputs can be Excel (`.xlsx`, `.xls`), CSV or **PDF**.
 
 ## How it works
 
@@ -11,6 +11,9 @@ Reconciles AKCC's Odoo 18 Enterprise **Partner Ledger** against **any supplier's
 | **Profiles** | Plain JSON. Sources, in order: manual mapping > saved layout > preset (`profiles/`, e.g. Odoo) > Claude > keyword fallback. |
 
 Self-checks run on every parse: the running balance must follow the extracted amounts (this also auto-detects the balance sign), and if Claude's profile fails the checks it is asked once to correct itself using the engine's diagnostics.
+
+### PDF statements
+A PDF is sent to Claude, which transcribes the statement table into rows (no calculation or correction). The same profile mapping and engine then run on that table, and the running-balance check flags any transcription error. The extracted table is kept in the browser session so editing the mapping does not re-read the PDF. Saved layouts are not used for PDFs.
 
 ### Matching passes
 1. Exact document reference, netted per reference (matched / amount difference / missing in the other statement).

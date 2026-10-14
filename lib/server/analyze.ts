@@ -1,9 +1,11 @@
 import { applyProfile } from "../engine/normalize.ts";
 import { heuristicProfile, layoutFingerprint, sanitizeProfile } from "../engine/profile.ts";
 import type { Grid, ParsedStatement, StatementProfile } from "../engine/types.ts";
+import { extractGridFromPdf } from "../ai/extractPdf.ts";
 import { AIUnavailableError, mapStatementWithClaude } from "../ai/mapStatement.ts";
 import { previewRows } from "../ai/preview.ts";
 import { pickSheet, readWorkbook } from "../excel/read.ts";
+import type { LoadedWorkbook } from "../excel/read.ts";
 import { findPreset } from "./presets.ts";
 import { loadProfile, saveProfile } from "./profileStore.ts";
 
@@ -14,6 +16,8 @@ export interface AnalyzeInput {
   fileName: string;
   role: "akcc" | "supplier";
   profileOverride?: unknown;
+  /** Previously extracted grid (PDF uploads), so a re-map does not re-read the PDF. */
+  gridOverride?: Grid | null;
   sheetName?: string | null;
   /** Persist the resulting profile for reuse. */
   save?: boolean;
@@ -27,6 +31,8 @@ export interface AnalyzeOutput {
   profile: StatementProfile;
   parsed: ParsedStatement;
   sheetNames: string[];
+  /** Present for PDF uploads: the table Claude extracted, kept so edits to the mapping reuse it. */
+  sourceGrid?: Grid;
   preview: { row: number; cells: string[] }[];
   messages: string[];
 }
@@ -48,19 +54,34 @@ function problemsWith(p: ParsedStatement, requireRefs: boolean): string[] {
   return out;
 }
 
+const isPdf = (buf: Buffer, fileName: string) => buf.subarray(0, 5).toString("latin1") === "%PDF-" || /\.pdf$/i.test(fileName);
+
 export async function analyzeStatement(input: AnalyzeInput): Promise<AnalyzeOutput> {
-  const wb = readWorkbook(input.buf);
+  const messages: string[] = [];
+  const pdf = isPdf(input.buf, input.fileName);
+  let wb: LoadedWorkbook;
+  if (pdf) {
+    let grid = input.gridOverride ?? null;
+    if (!grid) {
+      const ex = await extractGridFromPdf(input.buf, input.fileName, input.role);
+      grid = ex.grid;
+      messages.push("Read from a PDF by Claude: check the figures against the PDF. The running-balance check below flags transcription problems.");
+      if (ex.notes) messages.push(`PDF notes: ${ex.notes}`);
+    }
+    wb = { sheetNames: ["PDF table"], grids: { "PDF table": grid } };
+  } else {
+    wb = readWorkbook(input.buf);
+  }
   if (wb.sheetNames.length === 0) throw new Error("The workbook has no sheets.");
   const sheetName = pickSheet(wb, input.sheetName);
   const grid = wb.grids[sheetName];
   if (!grid || grid.length === 0) throw new Error(`Sheet "${sheetName}" is empty.`);
   const fingerprint = layoutFingerprint(grid);
-  const messages: string[] = [];
 
   const finish = async (profile: StatementProfile, source: ProfileSource, presetLabel?: string): Promise<AnalyzeOutput> => {
     const parsed = parse(grid, profile, input, sheetName);
-    if (input.save && source !== "preset") await saveProfile(fingerprint, profile);
-    return { role: input.role, fingerprint, source, presetLabel, profile, parsed, sheetNames: wb.sheetNames, preview: previewRows(grid), messages };
+    if (input.save && source !== "preset" && !pdf) await saveProfile(fingerprint, profile);
+    return { role: input.role, fingerprint, source, presetLabel, profile, parsed, sheetNames: wb.sheetNames, sourceGrid: pdf ? grid : undefined, preview: previewRows(grid), messages };
   };
 
   // 1. explicit override from the mapping editor
@@ -72,7 +93,7 @@ export async function analyzeStatement(input: AnalyzeInput): Promise<AnalyzeOutp
   }
 
   // 2. previously confirmed profile for this layout
-  const saved = await loadProfile(fingerprint);
+  const saved = pdf ? null : await loadProfile(fingerprint);
   if (saved) {
     const { profile } = sanitizeProfile(saved);
     if (profile && problemsWith(parse(grid, profile, input, sheetName), false).length === 0) return finish(profile, "saved");

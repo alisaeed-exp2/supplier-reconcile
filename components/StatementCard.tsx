@@ -104,11 +104,11 @@ export function StatementCard({ title, description, role, file, loading, error, 
           className={`flex cursor-pointer flex-col items-center gap-1 rounded-md border-2 border-dashed px-4 py-6 text-center text-sm transition-colors ${dragging ? "border-primary bg-secondary" : "border-input hover:bg-muted"}`}
         >
           {loading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Upload className="h-5 w-5 text-muted-foreground" />}
-          <span className="font-medium">{file ? file.name : "Drop an Excel file here or click to browse"}</span>
-          <span className="text-xs text-muted-foreground">.xlsx, .xls or .csv</span>
+          <span className="font-medium">{file ? file.name : "Drop an Excel or PDF file here or click to browse"}</span>
+          <span className="text-xs text-muted-foreground">Excel (.xlsx, .xls), CSV or PDF</span>
           <input
             type="file"
-            accept=".xlsx,.xls,.csv"
+            accept=".xlsx,.xlsm,.xls,.csv,.pdf,application/pdf"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -118,7 +118,11 @@ export function StatementCard({ title, description, role, file, loading, error, 
           />
         </label>
 
-        {loading && <p className="text-xs text-muted-foreground">{role === "supplier" ? "Claude is reading the statement layout…" : "Reading the statement…"}</p>}
+        {loading && (
+          <p className="text-xs text-muted-foreground">
+            {file && /\.pdf$/i.test(file.name) ? "Claude is reading the PDF - this can take a minute or two for long statements…" : role === "supplier" ? "Claude is reading the statement layout…" : "Reading the statement…"}
+          </p>
+        )}
         {error && <p className="rounded-md bg-red-50 p-2 text-sm text-red-700">{error}</p>}
 
         {analysis && p && (

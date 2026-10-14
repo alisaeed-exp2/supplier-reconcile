@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { analyzeStatement } from "@/lib/server/analyze";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {
@@ -13,12 +13,16 @@ export async function POST(req: Request) {
     if (role !== "akcc" && role !== "supplier") return NextResponse.json({ error: "Invalid role." }, { status: 400 });
     if (file.size > 15 * 1024 * 1024) return NextResponse.json({ error: "File is larger than 15 MB." }, { status: 413 });
 
+    if (!/\.(xlsx|xlsm|xls|csv|pdf)$/i.test(file.name)) return NextResponse.json({ error: "Upload an Excel (.xlsx, .xls), CSV or PDF file." }, { status: 400 });
+
     const overrideText = form.get("profile");
+    const gridText = form.get("grid");
     const out = await analyzeStatement({
       buf: Buffer.from(await file.arrayBuffer()),
       fileName: file.name,
       role,
       profileOverride: typeof overrideText === "string" && overrideText ? JSON.parse(overrideText) : undefined,
+      gridOverride: typeof gridText === "string" && gridText ? JSON.parse(gridText) : null,
       sheetName: (form.get("sheetName") as string) || null,
       save: form.get("save") === "true",
     });
