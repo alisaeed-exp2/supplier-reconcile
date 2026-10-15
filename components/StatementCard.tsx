@@ -120,7 +120,7 @@ export function StatementCard({ title, description, role, file, loading, error, 
 
         {loading && (
           <p className="text-xs text-muted-foreground">
-            {file && /\.pdf$/i.test(file.name) ? "Claude is reading the PDF - this can take a minute or two for long statements…" : role === "supplier" ? "Claude is reading the statement layout…" : "Reading the statement…"}
+            {file && /\.pdf$/i.test(file.name) ? "Claude is reading the PDF page by page - long statements can take a few minutes…" : role === "supplier" ? "Claude is reading the statement layout…" : "Reading the statement…"}
           </p>
         )}
         {error && <p className="rounded-md bg-red-50 p-2 text-sm text-red-700">{error}</p>}

@@ -13,7 +13,7 @@ Reconciles AKCC's Odoo 18 Enterprise **Partner Ledger** against **any supplier's
 Self-checks run on every parse: the running balance must follow the extracted amounts (this also auto-detects the balance sign), and if Claude's profile fails the checks it is asked once to correct itself using the engine's diagnostics.
 
 ### PDF statements
-A PDF is sent to Claude, which transcribes the statement table into rows (no calculation or correction). The same profile mapping and engine then run on that table, and the running-balance check flags any transcription error. The extracted table is kept in the browser session so editing the mapping does not re-read the PDF. Saved layouts are not used for PDFs.
+A PDF is split into small page batches (3 pages each, read in parallel) and Claude transcribes each batch into rows (no calculation or correction). The same profile mapping and engine then run on that table, and the running-balance check flags any transcription error. The extracted table is kept in the browser session so editing the mapping does not re-read the PDF. Saved layouts are not used for PDFs.
 
 ### Matching passes
 1. Exact document reference, netted per reference (matched / amount difference / missing in the other statement).
@@ -34,6 +34,7 @@ Nothing to change in code. Upload the statement: Claude maps it, the officer can
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Required for AI layout mapping. Without it the app falls back to keyword mapping plus manual correction. |
 | `ANTHROPIC_MODEL` | Optional, defaults to `claude-sonnet-5-5`. |
+| `PDF_PAGES_PER_BATCH` / `PDF_CONCURRENCY` | Optional. Pages per AI call (default 3) and parallel calls (default 3) when reading PDFs. |
 | `PROFILE_STORE_DIR` | Optional. Directory for saved layouts; mount a Railway volume here to keep them across deploys. |
 
 ## Develop
